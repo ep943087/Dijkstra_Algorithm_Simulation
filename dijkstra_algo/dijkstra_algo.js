@@ -153,13 +153,16 @@ export class Dijkstra_Algo{
       const node = new Node(world_m, "A");
       this.nodes.push(node);
   }
-
+  addNodePoint(point){
+      const node = new Node(point, "A");
+      this.nodes.push(node);
+  }
   /*************************
    * CONNECTION TYPES
    *************************/
   // INITIALIZE CONNECTION TYPES BUTTONS
   setConnectionTypesButtons(){
-    const buttons = ['connection-close', 'clear-connections','clear-nodes'];
+    const buttons = ['random-nodes', 'connection-close', 'clear-connections','clear-nodes'];
     buttons.forEach(name=>{
       const button = document.querySelector('.'+name);
       switch(name){
@@ -172,6 +175,9 @@ export class Dijkstra_Algo{
         case 'connection-close':
           button.addEventListener('click',()=>this.connectionsClose());
           break;
+        case 'random-nodes':
+          button.addEventListener('click',()=>this.randomNodes());
+          break;
       }
     });
   }
@@ -181,6 +187,16 @@ export class Dijkstra_Algo{
     this.nodes = [];
   }
 
+  // RANDOM NODES
+  randomNodes(){
+    this.clearNodes();
+    for(let i=0;i<17;i++){
+      const x = this.c.width * Math.random();
+      const y = this.c.height * Math.random();
+      this.addNodePoint({x,y});
+    }
+
+  }
   // CLEAR CONNECTIONS
   clearConnections(){
     this.nodes.forEach(node=>node.clearNeighbors());
@@ -241,7 +257,7 @@ export class Dijkstra_Algo{
   drawConnections = (node) => {
     node.neighbors.forEach(node2=>{
       const line = [node.position, node2.position];
-      this.transforms.drawLine(line,'red');
+      this.transforms.drawLine(line,'black');
     });
   }
 
