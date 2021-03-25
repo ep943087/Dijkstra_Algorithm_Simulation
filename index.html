@@ -4,11 +4,27 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2d Matrix Transfomrations</title>
+  <title>Dijkstra's Algorithm</title>
+  <link rel="stylesheet" href="main.css">
 </head>
 <body>
-  <h1>2d Matrix Transformations</h1>
-  <canvas id="myCanvas"></canvas>
+  <h1>Dijkstra's Algorithm</h1>
+  <div class='controls'>
+    <button class='add-node control-button active'>Add Node</button>
+    <button class='add-connection control-button'>Add Connection</button>
+    <button class='move-node control-button'>Move 1 Node</button>
+    <button class='delete-node control-button'>Delete Node</button>
+    <button class='move-nodes control-button'>Move Nodes</button>
+    <button class='move-around control-button'>Move Around</button>
+  </div>
+  <div class="canvas-container">
+    <canvas id="myCanvas"></canvas>
+  </div>
+  <div class='connection-types'>
+    <button class='connection-type clear-nodes'>Clear Nodes</button>
+    <button class='connection-type clear-connections'>Clear Connections</button>
+    <button class='connection-type connection-close'>Connect Close (Within 200px)</button>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
