@@ -6,6 +6,11 @@ class Node{
     this.name = name;
     this.neighbors = [];
     this.previous = null;
+    this.distance = Infinity;
+  }
+  setForAlgorithm(){
+    this.previous = null;
+    this.distance = Infinity;
   }
   includes(node){
     return this.neighbors.some(node2=>node2 === node);
@@ -27,6 +32,7 @@ export class Dijkstra_Algo{
     this.transforms.setIsStatic(true);
     this.setButtons();
     this.setConnectionTypesButtons();
+    this.setSimulationButtons();
     this.reset();
     this.addEvents();
   }
@@ -70,6 +76,9 @@ export class Dijkstra_Algo{
           break;
         case 'delete-node':
           this.deleteNode(e);
+          break;
+        case 'choosing-start-node':
+          this.chooseStartNode(e);
           break;
       }
     });
@@ -184,11 +193,13 @@ export class Dijkstra_Algo{
 
   // CLEAR NODES
   clearNodes(){
+    this.stopAllSimulationStuff();
     this.nodes = [];
   }
 
   // RANDOM NODES
   randomNodes(){
+    this.stopAllSimulationStuff();
     this.clearNodes();
     for(let i=0;i<17;i++){
       const x = this.c.width * Math.random();
@@ -199,11 +210,13 @@ export class Dijkstra_Algo{
   }
   // CLEAR CONNECTIONS
   clearConnections(){
+    this.stopAllSimulationStuff();
     this.nodes.forEach(node=>node.clearNeighbors());
   }
 
   // CONNECTION CLOSE
   connectionsClose(){
+    this.stopAllSimulationStuff();
     this.clearConnections();
     const distance = 200;
     for(let i=0;i<this.nodes.length;i++){
@@ -218,9 +231,12 @@ export class Dijkstra_Algo{
 
   // INITIALIZE
   reset(){
+    this.finishedSim = false;
     this.currentNode = null;
     this.currentNode2 = null;
+    this.startingNode = null;
     this.nodes = [];
+    this.runningSim = false;
     this.setState('add-node');
     this.setButtonActive(this.state);
   }
@@ -234,11 +250,20 @@ export class Dijkstra_Algo{
       });
     });
   }
+  stopAllSimulationStuff(){
+    this.nodes.forEach(node=>node.setForAlgorithm());
+    this.pivot = this.startingNode = null;
+    this.finishedSim = false;
+    this.unvisited = [];
+    this.visited = [];
+    this.runningSim = false;
+  }
   setState(name){
     this.state = name;
     if(name === "move-around"){
       this.transforms.setIsStatic(false);
     } else{
+      this.stopAllSimulationStuff();
       this.transforms.setIsStatic(true);
     }
     this.setButtonActive(name);
@@ -253,6 +278,94 @@ export class Dijkstra_Algo{
     }
   }
 
+  /***********
+   * SIMULATION STUFF
+   ************/
+
+  // INITIALIZE SIMULATION BUTTONS
+  setSimulationButtons(){
+    const buttonNames = ['start','stop'];
+    buttonNames.forEach(name=>{
+      const button = document.querySelector('.'+name);
+      switch(name){
+        case 'start':
+          button.addEventListener('click',()=>this.startSimulation());
+          break;
+        case 'stop':
+          button.addEventListener('click',()=>this.stopSimulation());
+          break;
+      }
+    })
+  }
+
+  // START SIMULATION
+  startSimulation(){
+    this.setState('choosing-start-node');
+  }
+
+  chooseStartNode(e){
+    const m = this.transforms.getMousePos(e);
+    const world_m = this.transforms.screenToWorld(m);
+    this.startingNode = this.searchNode(world_m);
+    if(this.startingNode === null) return;
+    this.runningSim = true;
+    this.nodes.forEach(node=>node.setForAlgorithm());
+    this.pivot = this.startingNode;
+    this.pivot.distance = 0;
+    this.visited = [];
+    this.notvisited = [...this.nodes];
+    this.setState('move-around');
+    this.runningSim = false;
+    this.finishedSim = false;
+    setTimeout(()=>this.runningSim = true, 1000);
+  }
+  startDijkstraAlgo(){
+    if(!this.runningSim || this.pivot === null) return;
+    if(this.notvisited.length === 0){
+      this.pivot = null;
+      this.visited = [];
+      return;
+    }
+    for(const neighbor of this.pivot.neighbors){
+      let unvisited = true;
+      for(let i=0;i<this.visited.length;i++){
+        if(this.visited[i] === neighbor){
+          unvisited = false;
+          break;
+        }
+      }
+      if(!unvisited) continue;
+      const distance = this.distance(this.pivot.position, neighbor.position);
+      const newDistance = distance + this.pivot.distance;
+      if(newDistance < neighbor.distance){
+        neighbor.distance = newDistance;
+        neighbor.previous = this.pivot;
+      }
+    }
+    this.notvisited = this.notvisited.filter(node=>node !== this.pivot);
+    this.visited.push(this.pivot);
+
+    if(this.notvisited.length === 0){
+      this.finishedSim = true;
+      this.runningSim = false;
+      this.visited = [];
+      return this.pivot = null;
+    }
+
+    this.pivot = this.notvisited[0];
+    for(const node of this.notvisited){
+      if(node.distance < this.pivot.distance)
+        this.pivot = node;
+    }
+    this.runningSim = false;
+    setTimeout(()=>this.runningSim = true, 1000);
+  }
+
+  stopSimulation(){
+    this.setState('move-around');
+    this.runningSim = false;
+  }
+
   // DRAWING LOGIC BELOW
   drawConnections = (node) => {
     node.neighbors.forEach(node2=>{
@@ -261,14 +374,32 @@ export class Dijkstra_Algo{
     });
   }
 
+  drawPrevious = (node) => {
+    if(node.previous !== null){
+      const line = [node.position, node.previous.position];
+      this.transforms.drawLine(line,'red',2);
+    }
+  }
+
   drawNode = (node) => {
     const circle = getCircle(node.position.x,node.position.y,this.nodeRadius);
-    const color = node === this.currentNode || node === this.currentNode2? "blue" : "white";
+    let color = node === this.currentNode || node === this.currentNode2? "blue" : "white";
+    if(node === this.pivot) color = "blue";
+    if(node === this.startingNode) color = "red";
     this.transforms.drawShape(circle,color,1);
   }
 
   drawNodes(){
     this.nodes.forEach(this.drawConnections);
+    this.nodes.forEach(this.drawPrevious);
     this.nodes.forEach(this.drawNode);
+
+    if(this.state === 'choosing-start-node'){
+      this.ctx.fillStyle = "black";
+      this.ctx.font = "30px Arial";
+      this.ctx.textBaseline = "top";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText('Click on the starting node', 10,10);
+    }
   }
 }

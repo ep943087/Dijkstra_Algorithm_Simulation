@@ -32,6 +32,7 @@ export class Transformations{
     })
     this.c.addEventListener('wheel',(e)=>{
       if(this.isStatic) return;
+      e.preventDefault();
       const change = .9;
       this.scale = e.deltaY > 0? this.scale * change : this.scale / change;
     })
