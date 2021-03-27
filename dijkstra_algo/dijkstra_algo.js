@@ -1,4 +1,5 @@
 import {Transformations, getCircle, getAngle} from '../transformations/transforms.js';
+import {default_graph} from './default.js';
 
 class Node{
   constructor(position, name){
@@ -31,11 +32,14 @@ export class Dijkstra_Algo{
     this.transforms = new Transformations(c);
     this.transforms.setIsStatic(true);
     this.delay = null;
+    this.currentFile = null;
     this.setButtons();
     this.setConnectionTypesButtons();
     this.setSimulationButtons();
+    this.setLocalStorageButtons();
     this.reset();
     this.addEvents();
+    this.loadJSON(default_graph);
   }
 
   // MOUSE EVENTS
@@ -157,11 +161,16 @@ export class Dijkstra_Algo{
     this.currentNode2 = this.searchNode(world_m);
     if(this.currentNode === this.currentNode2)
       this.currentNode2 = null;
+    if(this.currentNode2 !== null){
+      this.addNodeConnection(this.currentNode, this.currentNode2);
+      this.currentNode = this.currentNode2;
+      this.currentNode2 = null;
+    }
   }
   addConnectionMouseUp(e){
-    if(this.currentNode !== null && this.currentNode2 !== null){
-      this.addNodeConnection(this.currentNode, this.currentNode2);
-    }
+    // if(this.currentNode !== null && this.currentNode2 !== null){
+    //   this.addNodeConnection(this.currentNode, this.currentNode2);
+    // }
     this.currentNode = null;
     this.currentNode2 = null;
   }
@@ -183,6 +192,19 @@ export class Dijkstra_Algo{
     for(const select of selects){
 
     }
+  }
+
+  /***********************
+   * LOCAL STORAGE STUFF
+   ************************/
+
+  // SET BUTTONS AND SELECT
+  setLocalStorageButtons(){
+    const storageSave = document.querySelector('.storage-save');
+    storageSave.addEventListener('click',(e)=>{
+      const json = this.generateJSON();
+      console.log(json);
+    })
   }
 
   /*************************
@@ -438,6 +460,46 @@ export class Dijkstra_Algo{
     this.runningSim = false;
   }
 
+  // GENERATE JSON STRING
+  generateJSON(){
+    const obj = [];
+    for(let i=0;i<this.nodes.length;i++){
+      this.nodes[i].id = i;
+      obj.push({
+        position: this.nodes[i].position,
+        id: i,
+      });
+    }
+    for(let i=0;i<this.nodes.length;i++){
+      const neighbors = [];
+      for(let j=0;j<this.nodes[i].neighbors.length;j++){
+        neighbors.push(this.nodes[i].neighbors[j].id);  
+      }
+      obj[i].neighbors = neighbors;
+    }
+    return JSON.stringify(obj);
+  }
+  findNodeById(id){
+    return this.nodes.find(node=>node.id === id);
+  }
+  loadJSON(json){
+    this.nodes = [];
+    const obj = JSON.parse(json);
+    for(const nodeItem of obj){
+      const node = new Node(nodeItem.position,'A');
+      node.id = nodeItem.id;
+      node.neighbors = nodeItem.neighbors;
+      this.nodes.push(node);
+    }
+    for(const node of this.nodes){
+      const neighbors = [];
+      for(const id of node.neighbors){
+        const node2 = this.findNodeById(id);
+        neighbors.push(node2);
+      }
+      node.neighbors = neighbors;
+    }
+  }
   // DRAWING LOGIC BELOW
   drawConnections = (node) => {
     node.neighbors.forEach(node2=>{
@@ -473,6 +535,7 @@ export class Dijkstra_Algo{
     let color = node === this.currentNode || node === this.currentNode2? "blue" : "white";
     if(node === this.pivot) color = "blue";
     if(node !== this.startingPivot && this.listIncludes(this.visited, node)) color = "red";
+    //if(this.finishedSim) color = "rgba(255,0,0)";
     if(node === this.startingNode) color = "rgba(0,255,0)";
     this.transforms.drawShape(circle,color,1);
   }
