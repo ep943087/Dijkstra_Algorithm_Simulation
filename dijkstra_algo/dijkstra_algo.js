@@ -1,4 +1,4 @@
-import {Transformations, getCircle} from '../transformations/transforms.js';
+import {Transformations, getCircle, getAngle} from '../transformations/transforms.js';
 
 class Node{
   constructor(position, name){
@@ -30,6 +30,7 @@ export class Dijkstra_Algo{
     this.ctx = c.getContext('2d');
     this.transforms = new Transformations(c);
     this.transforms.setIsStatic(true);
+    this.delay = null;
     this.setButtons();
     this.setConnectionTypesButtons();
     this.setSimulationButtons();
@@ -79,6 +80,16 @@ export class Dijkstra_Algo{
           break;
         case 'choosing-start-node':
           this.chooseStartNode(e);
+          break;
+      }
+    });
+    document.addEventListener('keydown',(e)=>{
+      switch(e.key){
+        case 'f':
+          this.setOnePath();
+          break;
+        case 's':
+          this.chooseStartNode(this.transforms.camera, true);
           break;
       }
     });
@@ -166,6 +177,14 @@ export class Dijkstra_Algo{
       const node = new Node(point, "A");
       this.nodes.push(node);
   }
+
+  setSelects(){
+    const selects = ['select-delay'];
+    for(const select of selects){
+
+    }
+  }
+
   /*************************
    * CONNECTION TYPES
    *************************/
@@ -231,6 +250,9 @@ export class Dijkstra_Algo{
 
   // INITIALIZE
   reset(){
+    this.onePathSet = false;
+    this.onePath = [];
+    this.onePathNode = null;
     this.finishedSim = false;
     this.currentNode = null;
     this.currentNode2 = null;
@@ -257,6 +279,9 @@ export class Dijkstra_Algo{
     this.unvisited = [];
     this.visited = [];
     this.runningSim = false;
+    this.onePath = [];
+    this.onePathSet = false;
+    this.onePathNode = false;
   }
   setState(name){
     this.state = name;
@@ -268,7 +293,13 @@ export class Dijkstra_Algo{
     }
     this.setButtonActive(name);
   }
-
+  listIncludes(list,item){
+    for(const items of list){
+      if(items === item)
+        return true;
+    }
+    return false;
+  }
   // SET BUTTONS CLASS TO ACTIVE
   setButtonActive(name){
     for(const key in this.buttons){
@@ -303,21 +334,40 @@ export class Dijkstra_Algo{
     this.setState('choosing-start-node');
   }
 
-  chooseStartNode(e){
-    const m = this.transforms.getMousePos(e);
-    const world_m = this.transforms.screenToWorld(m);
-    this.startingNode = this.searchNode(world_m);
-    if(this.startingNode === null) return;
+  chooseStartNode(e, isPoint){
+    if(!isPoint){
+      const m = this.transforms.getMousePos(e);
+      const world_m = this.transforms.screenToWorld(m);
+      this.startingNode = this.searchNode(world_m);
+    } else{
+      this.startingNode = this.searchNode(e);
+    }
+    if(this.startingNode === null) {
+      return this.stopAllSimulationStuff();
+    };
     this.runningSim = true;
     this.nodes.forEach(node=>node.setForAlgorithm());
     this.pivot = this.startingNode;
     this.pivot.distance = 0;
     this.visited = [];
     this.notvisited = [...this.nodes];
+    this.onePath = null;
+    this.onePathSet = false;
+    this.onePathNode = null;
     this.setState('move-around');
-    this.runningSim = false;
     this.finishedSim = false;
-    setTimeout(()=>this.runningSim = true, 1000);
+    const select = document.querySelector('.select-delay');
+    const selectValue = parseInt(select.value);
+    this.delay = selectValue === selectValue? selectValue : null;
+    if(this.delay !== null){
+      this.runningSim = false;
+      setTimeout(()=>this.runningSim = true, this.delay);
+    } else{
+      this.runningSim = true;
+      while(this.runningSim){
+        this.startDijkstraAlgo();
+      }
+    }
   }
   startDijkstraAlgo(){
     if(!this.runningSim || this.pivot === null) return;
@@ -357,10 +407,32 @@ export class Dijkstra_Algo{
       if(node.distance < this.pivot.distance)
         this.pivot = node;
     }
-    this.runningSim = false;
-    setTimeout(()=>this.runningSim = true, 1000);
+    if(this.delay !== null){
+      this.runningSim = false;
+      setTimeout(()=>this.runningSim = true, this.delay);
+    }
   }
 
+  // SET PATH FIND ONE NODE
+  setOnePath(){
+    if(!this.finishedSim) return;
+    let node = this.searchNode(this.transforms.camera);
+    if(node === null || node === this.onePathNode){
+      this.onePath = [];
+      this.onePathNode = null;
+      this.onePathSet = false;
+      return;
+    }
+
+    this.onePath = [];
+    this.onePathNode = node;
+    this.onePathSet = true;
+
+    while(node !== null){
+      this.onePath.push(node);
+      node = node.previous;
+    }
+  }
   stopSimulation(){
     this.setState('move-around');
     this.runningSim = false;
@@ -376,8 +448,23 @@ export class Dijkstra_Algo{
 
   drawPrevious = (node) => {
     if(node.previous !== null){
-      const line = [node.position, node.previous.position];
-      this.transforms.drawLine(line,'red',2);
+      const angle = getAngle(node.position, node.previous.position);
+      const initPoint = {
+        x: node.position.x + this.nodeRadius*Math.cos(angle),
+        y: node.position.y + this.nodeRadius*Math.sin(angle),
+      };
+      const point1 = {
+        x: initPoint.x + this.nodeRadius*Math.cos(angle - Math.PI/4),
+        y: initPoint.y + this.nodeRadius*Math.sin(angle - Math.PI/4),
+      }
+      const point2 = {
+        x: initPoint.x + this.nodeRadius*Math.cos(angle + Math.PI/4),
+        y: initPoint.y + this.nodeRadius*Math.sin(angle + Math.PI/4),
+      }
+      const arrow = [point1, initPoint, point2];
+      this.transforms.drawLine(arrow, 'rgba(0,255,0)',3);
+      const line = [node.previous.position, node.position];
+      this.transforms.drawLine(line,'rgba(0,255,0)',3);
     }
   }
 
@@ -385,13 +472,19 @@ export class Dijkstra_Algo{
     const circle = getCircle(node.position.x,node.position.y,this.nodeRadius);
     let color = node === this.currentNode || node === this.currentNode2? "blue" : "white";
     if(node === this.pivot) color = "blue";
-    if(node === this.startingNode) color = "red";
+    if(node !== this.startingPivot && this.listIncludes(this.visited, node)) color = "red";
+    if(node === this.startingNode) color = "rgba(0,255,0)";
     this.transforms.drawShape(circle,color,1);
   }
 
   drawNodes(){
     this.nodes.forEach(this.drawConnections);
-    this.nodes.forEach(this.drawPrevious);
+
+    if(this.onePathSet)
+      this.onePath.forEach(this.drawPrevious);
+    else
+      this.nodes.forEach(this.drawPrevious);
+
     this.nodes.forEach(this.drawNode);
 
     if(this.state === 'choosing-start-node'){
