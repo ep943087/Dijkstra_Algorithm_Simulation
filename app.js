@@ -11,7 +11,7 @@ const draw = () => {
   requestAnimationFrame(draw);
   c.width = c.offsetWidth;
   c.height = c.offsetHeight;
-  ctx.fillStyle = "#808080";
+  ctx.fillStyle = algo.backgroundColor;
   ctx.clearRect(0,0,c.width,c.height);
   ctx.fillRect(0,0,c.width,c.height);
   algo.startDijkstraAlgo();

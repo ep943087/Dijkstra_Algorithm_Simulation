@@ -34,12 +34,24 @@ export class Dijkstra_Algo{
     this.delay = null;
     this.currentFile = null;
     this.setButtons();
+    this.setColors();
     this.setConnectionTypesButtons();
     this.setSimulationButtons();
     this.setLocalStorageButtons();
     this.reset();
     this.addEvents();
+    this.connectionDistance = 200;
     this.loadJSON(default_graph);
+  }
+
+  // COLORS
+  setColors(){
+    this.backgroundColor = "#b8c3d5";
+    this.connectionColor = "#0062ff";
+    this.pathColor = "#ffff00";
+    this.currentNodeColor = "#67b4f4";
+    this.visitedColor = "#e01a1a";
+    this.nodeColor = "#3E1C49";
   }
 
   // MOUSE EVENTS
@@ -212,7 +224,7 @@ export class Dijkstra_Algo{
    *************************/
   // INITIALIZE CONNECTION TYPES BUTTONS
   setConnectionTypesButtons(){
-    const buttons = ['random-nodes', 'connection-close', 'clear-connections','clear-nodes'];
+    const buttons = ['connection-close', 'clear-connections','clear-nodes'];
     buttons.forEach(name=>{
       const button = document.querySelector('.'+name);
       switch(name){
@@ -259,7 +271,7 @@ export class Dijkstra_Algo{
   connectionsClose(){
     this.stopAllSimulationStuff();
     this.clearConnections();
-    const distance = 200;
+    const distance = this.connectionDistance;
     for(let i=0;i<this.nodes.length;i++){
       for(let j=i+1;j<this.nodes.length;j++){
         const dist = this.distance(this.nodes[i].position, this.nodes[j].position);
@@ -504,7 +516,7 @@ export class Dijkstra_Algo{
   drawConnections = (node) => {
     node.neighbors.forEach(node2=>{
       const line = [node.position, node2.position];
-      this.transforms.drawLine(line,'black');
+      this.transforms.drawLine(line,this.connectionColor);
     });
   }
 
@@ -524,19 +536,21 @@ export class Dijkstra_Algo{
         y: initPoint.y + this.nodeRadius*Math.sin(angle + Math.PI/4),
       }
       const arrow = [point1, initPoint, point2];
-      this.transforms.drawLine(arrow, 'rgba(0,255,0)',3);
+      this.transforms.drawLine(arrow, this.pathColor,3);
       const line = [node.previous.position, node.position];
-      this.transforms.drawLine(line,'rgba(0,255,0)',3);
+      this.transforms.drawLine(line,this.pathColor,3);
     }
   }
 
   drawNode = (node) => {
     const circle = getCircle(node.position.x,node.position.y,this.nodeRadius);
-    let color = node === this.currentNode || node === this.currentNode2? "blue" : "white";
-    if(node === this.pivot) color = "blue";
-    if(node !== this.startingPivot && this.listIncludes(this.visited, node)) color = "red";
+    let color = node === this.currentNode || node === this.currentNode2? this.visitedColor : this.nodeColor;
+    if(node === this.pivot) color = this.currentNodeColor;
+    if(node !== this.startingPivot && this.listIncludes(this.visited, node)) color = this.visitedColor;
     //if(this.finishedSim) color = "rgba(255,0,0)";
-    if(node === this.startingNode) color = "rgba(0,255,0)";
+    if(this.finishedSim && !this.onePathSet) color = this.visitedColor;
+    else if(this.onePathSet && this.listIncludes(this.onePath, node)) color = this.visitedColor;
+    if(node === this.startingNode) color = this.pathColor;
     this.transforms.drawShape(circle,color,1);
   }
 
@@ -556,6 +570,11 @@ export class Dijkstra_Algo{
       this.ctx.textBaseline = "top";
       this.ctx.textAlign = "left";
       this.ctx.fillText('Click on the starting node', 10,10);
+    }
+
+    if(this.state === 'add-node'){
+      const circle = getCircle(this.transforms.camera.x,this.transforms.camera.y,this.connectionDistance);
+      this.transforms.drawShape(circle,this.visitedColor,0);
     }
   }
 }
