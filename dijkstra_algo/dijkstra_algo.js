@@ -48,9 +48,9 @@ export class Dijkstra_Algo{
   setColors(){
     this.backgroundColor = "#b8c3d5";
     this.connectionColor = "#0062ff";
-    this.visitedColor = "#00ffff";
-    this.currentNodeColor = "#ff00ff";
-    this.pathColor = "#ffffff";
+    this.visitedColor = "#ff5500";
+    this.currentNodeColor = "#e01a1a";
+    this.pathColor = "#ffff00";
     this.nodeColor = "#3E1C49";
   }
 
