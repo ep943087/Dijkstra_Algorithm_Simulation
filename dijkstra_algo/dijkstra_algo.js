@@ -48,9 +48,9 @@ export class Dijkstra_Algo{
   setColors(){
     this.backgroundColor = "#b8c3d5";
     this.connectionColor = "#0062ff";
-    this.pathColor = "#ffff00";
-    this.currentNodeColor = "#67b4f4";
-    this.visitedColor = "#e01a1a";
+    this.visitedColor = "#00ffff";
+    this.currentNodeColor = "#ff00ff";
+    this.pathColor = "#ffffff";
     this.nodeColor = "#3E1C49";
   }
 
@@ -516,7 +516,7 @@ export class Dijkstra_Algo{
   drawConnections = (node) => {
     node.neighbors.forEach(node2=>{
       const line = [node.position, node2.position];
-      this.transforms.drawLine(line,this.connectionColor);
+      this.transforms.drawLine(line,this.connectionColor,this.connectionLineLength);
     });
   }
 
@@ -528,33 +528,44 @@ export class Dijkstra_Algo{
         y: node.position.y + this.nodeRadius*Math.sin(angle),
       };
       const point1 = {
-        x: initPoint.x + this.nodeRadius*Math.cos(angle - Math.PI/4),
-        y: initPoint.y + this.nodeRadius*Math.sin(angle - Math.PI/4),
+        x: initPoint.x + this.nodeRadius*2*Math.cos(angle - Math.PI/6),
+        y: initPoint.y + this.nodeRadius*2*Math.sin(angle - Math.PI/6),
       }
       const point2 = {
-        x: initPoint.x + this.nodeRadius*Math.cos(angle + Math.PI/4),
-        y: initPoint.y + this.nodeRadius*Math.sin(angle + Math.PI/4),
+        x: initPoint.x + this.nodeRadius*2*Math.cos(angle + Math.PI/6),
+        y: initPoint.y + this.nodeRadius*2*Math.sin(angle + Math.PI/6),
       }
       const arrow = [point1, initPoint, point2];
-      this.transforms.drawLine(arrow, this.pathColor,3);
+      this.transforms.drawLine(arrow, this.pathColor,this.previousLineLength);
       const line = [node.previous.position, node.position];
-      this.transforms.drawLine(line,this.pathColor,3);
+      this.transforms.drawLine(line,this.pathColor,this.previousLineLength);
     }
   }
 
   drawNode = (node) => {
-    const circle = getCircle(node.position.x,node.position.y,this.nodeRadius);
+    const radius = node === this.startingNode? this.nodeRadius*2 : this.nodeRadius;
+    const circle = getCircle(node.position.x,node.position.y,radius);
     let color = node === this.currentNode || node === this.currentNode2? this.visitedColor : this.nodeColor;
     if(node === this.pivot) color = this.currentNodeColor;
     if(node !== this.startingPivot && this.listIncludes(this.visited, node)) color = this.visitedColor;
     //if(this.finishedSim) color = "rgba(255,0,0)";
     if(this.finishedSim && !this.onePathSet) color = this.visitedColor;
     else if(this.onePathSet && this.listIncludes(this.onePath, node)) color = this.visitedColor;
-    if(node === this.startingNode) color = this.pathColor;
-    this.transforms.drawShape(circle,color,1);
+    if(node === this.startingNode){
+      color = this.pathColor;
+      this.transforms.drawShape(circle,color,1);
+      this.transforms.ctx.lineWidth = this.connectionLineLength;
+      this.transforms.drawShape(circle,this.visitedColor,0);
+    } else{
+      this.transforms.drawShape(circle,color,1);
+    }
   }
 
   drawNodes(){
+
+    this.connectionLineLength = this.transforms.transformLineWidth(3);
+    this.previousLineLength = this.transforms.transformLineWidth(5 / Math.sqrt(this.transforms.scale));
+
     this.nodes.forEach(this.drawConnections);
 
     if(this.onePathSet)

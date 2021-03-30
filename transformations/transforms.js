@@ -80,6 +80,12 @@ export class Transformations{
       shape[i].y = ax[1][0] * x + ax[1][1] * y + point.y;
     }
   }
+  transformLineWidth(lineWidth){
+    const points = [this.transformPoint({x: 0,y: 0}),
+      this.transformPoint({x: lineWidth, y:0 })];
+    return points[1].x - points[0].x;
+  }
+
   setIsStatic(isStatic){this.isStatic = isStatic; this.moving = false;}
   setScale(scale){this.scale = scale}
   setAnchor(anchor){this.anchor = anchor}
@@ -107,7 +113,6 @@ export class Transformations{
     if(fill){
       this.ctx.fill();
     } else{
-      this.ctx.lineWidth = 1;
       this.ctx.stroke();
     }
   }
